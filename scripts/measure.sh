@@ -14,6 +14,18 @@ SUDO=""
 mkdir -p "$OUT"
 trap '$SUDO bash scripts/netem.sh off >/dev/null' EXIT
 
+{
+    . /etc/os-release
+    echo "host: $(hostname)"
+    echo "os: $PRETTY_NAME"
+    echo "kernel: $(uname -r) ($(uname -m))"
+    echo "cpu: $(lscpu | awk -F: '/Model name/{gsub(/^ +/,"",$2); print $2; exit}') x $(nproc)"
+    if grep -qi microsoft /proc/version; then echo "platform: WSL2 (virtual machine)"; else echo "platform: bare metal or non-WSL VM"; fi
+    echo "date: $(date -u +%Y-%m-%dT%H:%MZ)"
+    echo "commit: $(git rev-parse --short HEAD 2>/dev/null || echo unknown)"
+} >"$OUT/machine.txt"
+cat "$OUT/machine.txt"
+
 echo "### 1. Loop timing (nominal flights)"
 for i in 1 2 3; do bash scripts/sitl.sh -o "$OUT/timing_default_$i"; done
 for i in 1 2 3; do bash scripts/sitl.sh -o "$OUT/timing_rt_$i" --rt; done

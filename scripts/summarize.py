@@ -16,7 +16,10 @@ def load(p: Path) -> dict | None:
 
 
 def main(out: Path) -> None:
-    print(f"# Measurements ({out})\n")
+    print(f"# Measurements ({out.name})\n")
+    machine = out / "machine.txt"
+    if machine.exists():
+        print("```\n" + machine.read_text().strip() + "\n```\n")
 
     print("## Loop timing, 100 Hz loop, nominal flights\n")
     print("| run | SCHED_FIFO | spin | frames | wake p50 us | wake p99 us | wake max us | jitter p50 us | jitter p99 us | jitter max us | overruns |")
