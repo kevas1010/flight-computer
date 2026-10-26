@@ -1,0 +1,76 @@
+name: ci
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  build-test:
+    name: build + test (${{ matrix.preset }})
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        preset: [release, asan]
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install toolchain
+        run: sudo apt-get update && sudo apt-get install -y cmake ninja-build libgtest-dev
+      - name: Configure
+        run: cmake --preset ${{ matrix.preset }} -DFC_WERROR=ON
+      - name: Build
+        run: cmake --build --preset ${{ matrix.preset }}
+      - name: Unit, closed-loop and replay tests
+        run: ctest --preset ${{ matrix.preset }}
+      - name: Replay golden flight logs
+        run: |
+          for log in tests/data/*.fclog; do
+            build/${{ matrix.preset }}/fc_replay "$log"
+          done
+
+  ground-station:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Protocol and reliable-uplink tests
+        run: python -m unittest discover -s ground -v
+
+  sitl:
+    name: three-process SITL flight
+    needs: build-test
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: |
+          sudo apt-get update && sudo apt-get install -y cmake ninja-build libgtest-dev
+          cmake --preset release -DFC_BUILD_TESTS=OFF
+          cmake --build --preset release
+      - name: Nominal flight over UDP
+        run: |
+          bash scripts/sitl.sh -o out/nominal
+          grep -q '"outcome": "LANDED"' out/nominal/sim_summary.json
+          build/release/fc_replay out/nominal/flight.fclog --tol 0
+      - name: Altimeter dropout through the landing burn
+        run: |
+          bash scripts/sitl.sh -o out/alt_dropout --fault alt_dropout@24:6
+          grep -q '"outcome": "LANDED"' out/alt_dropout/sim_summary.json
+      - name: Flight and uplink under 20% netem loss
+        # Hosted-runner kernels normally ship sch_netem; skip rather than fail if not.
+        run: |
+          if ! sudo bash scripts/netem.sh on 20; then echo "netem unavailable, skipping"; exit 0; fi
+          bash scripts/sitl.sh -o out/netem20
+          grep -q '"outcome": "LANDED"' out/netem20/sim_summary.json
+          build/release/flight_computer --log none --max-time 120 & FC=$!
+          sleep 1
+          python3 ground/uplink_stress.py --count 300 --json out/netem20/uplink.json
+          kill $FC
+          sudo bash scripts/netem.sh off
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: sitl-runs
+          path: out/

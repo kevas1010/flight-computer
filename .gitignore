@@ -1,0 +1,10 @@
+build/
+out/
+__pycache__/
+*.pyc
+/*.fclog
+/*_stats.json
+/*.csv
+compile_commands.json
+.vscode/
+.idea/
