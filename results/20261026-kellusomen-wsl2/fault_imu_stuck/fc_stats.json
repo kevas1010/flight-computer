@@ -1,0 +1,13 @@
+{
+  "rate_hz": 100,
+  "sched_fifo": false,
+  "spin_us": 0,
+  "wake_latency": {"count": 4206, "mean_us": 296.69, "p50_us": 286.23, "p90_us": 349.33, "p99_us": 528.94, "p999_us": 637.61, "max_us": 721.77},
+  "period_jitter": {"count": 4205, "mean_us": 44.34, "p50_us": 24.11, "p90_us": 116.18, "p99_us": 278.14, "p999_us": 384.49, "max_us": 466.96},
+  "overruns": 0,
+  "uplink_crc_errors": 0,
+  "cmds_accepted": 1,
+  "cmds_duplicate": 0,
+  "final_state": "LANDED",
+  "abort_reason": "none"
+}

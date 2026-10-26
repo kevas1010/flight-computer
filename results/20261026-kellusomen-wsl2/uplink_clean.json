@@ -1,0 +1,22 @@
+{
+  "commands": 2000,
+  "acked": 2000,
+  "failed": 0,
+  "delivery_pct": 100.0,
+  "packets_sent": 2000,
+  "retransmissions": 0,
+  "first_try_pct": 100.0,
+  "mean_attempts": 1.0,
+  "max_attempts": 1,
+  "attempt_histogram": {
+    "1": 2000
+  },
+  "latency_ms": {
+    "p50": 9.98,
+    "p99": 10.24,
+    "max": 10.51
+  },
+  "stray_acks": 0,
+  "ack_decode_errors": 0,
+  "elapsed_s": 20.0
+}

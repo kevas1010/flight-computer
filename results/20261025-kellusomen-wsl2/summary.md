@@ -1,4 +1,15 @@
-# Measurements (scripts/measure.sh, Ubuntu 24.04 on WSL2, 2026-10-25/26)
+# Measurements (20261025-kellusomen-wsl2)
+
+```
+host: kellusomen
+os: Ubuntu 24.04.3 LTS
+kernel: 6.6.87.2-microsoft-standard-WSL2 (x86_64)
+cpu: Intel(R) Core(TM) Ultra 7 255H x 16
+platform: WSL2 (virtual machine)
+date: 2026-10-25 (corruption runs 2026-10-26)
+commit: working tree before the first commit f73b0c3; corruption runs at 6890fb8
+note: machine.txt reconstructed afterwards on the same machine; this campaign predates it
+```
 
 ## Loop timing, 100 Hz loop, nominal flights
 

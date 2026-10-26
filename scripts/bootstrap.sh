@@ -71,10 +71,16 @@ sudo -v
 KEEPALIVE=$!
 trap 'kill $KEEPALIVE 2>/dev/null' EXIT
 
-OUT="out/measurements-$(hostname)-$(date +%Y%m%d-%H%M)"
+if grep -qi microsoft /proc/version; then PLATFORM=wsl2; else PLATFORM=baremetal; fi
+OUT="results/$(date +%Y%m%d-%H%M)-$(hostname)-$PLATFORM"
 step "Measurement campaign -> $OUT (about 15 minutes; keep the machine otherwise idle)"
 BUILD=build/release bash scripts/measure.sh "$OUT"
 
+step "Comparison across every result set in results/"
+python3 scripts/compare.py
+
 step "Done"
-echo "Summary: $OUT/summary.md"
-echo "Copy it back with e.g.:  scp -r $(whoami)@$(hostname):$(pwd)/$OUT ."
+echo "New result set: $OUT (summary.md, machine.txt, raw JSON; flight logs stay local)"
+echo "To keep it in your GitHub history next to the earlier runs:"
+echo "  python3 scripts/compare.py --update-readme"
+echo "  git add results README.md && git commit -m \"Add $PLATFORM measurements from $(hostname)\" && git push"

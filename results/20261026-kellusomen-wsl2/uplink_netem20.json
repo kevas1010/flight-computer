@@ -1,0 +1,30 @@
+{
+  "commands": 2000,
+  "acked": 2000,
+  "failed": 0,
+  "delivery_pct": 100.0,
+  "packets_sent": 3155,
+  "retransmissions": 1155,
+  "first_try_pct": 64.0,
+  "mean_attempts": 1.577,
+  "max_attempts": 9,
+  "attempt_histogram": {
+    "1": 1280,
+    "2": 451,
+    "3": 160,
+    "4": 73,
+    "5": 23,
+    "6": 8,
+    "7": 3,
+    "8": 1,
+    "9": 1
+  },
+  "latency_ms": {
+    "p50": 10.04,
+    "p99": 210.08,
+    "max": 420.12
+  },
+  "stray_acks": 0,
+  "ack_decode_errors": 0,
+  "elapsed_s": 77.76
+}

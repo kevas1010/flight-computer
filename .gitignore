@@ -1,5 +1,9 @@
 build/
 out/
+# results/ is committed (summaries, machine info, JSON stats); bulky raw files stay local
+results/**/*.fclog
+results/**/*.csv
+results/**/*.log
 __pycache__/
 *.pyc
 /*.fclog

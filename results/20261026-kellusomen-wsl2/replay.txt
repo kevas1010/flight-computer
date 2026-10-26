@@ -1,0 +1,15 @@
+MATCH out/measurements-kellusomen-20261026-0513/fault_alt_dropout/flight.fclog
+MATCH out/measurements-kellusomen-20261026-0513/fault_dual/flight.fclog
+MATCH out/measurements-kellusomen-20261026-0513/fault_imu_stuck/flight.fclog
+MATCH out/measurements-kellusomen-20261026-0513/fault_sensor_blackout/flight.fclog
+MATCH out/measurements-kellusomen-20261026-0513/netem20_corrupt1_flight/flight.fclog
+MATCH out/measurements-kellusomen-20261026-0513/netem20_flight/flight.fclog
+MATCH out/measurements-kellusomen-20261026-0513/timing_default_1/flight.fclog
+MATCH out/measurements-kellusomen-20261026-0513/timing_default_2/flight.fclog
+MATCH out/measurements-kellusomen-20261026-0513/timing_default_3/flight.fclog
+MATCH out/measurements-kellusomen-20261026-0513/timing_rt_1/flight.fclog
+MATCH out/measurements-kellusomen-20261026-0513/timing_rt_2/flight.fclog
+MATCH out/measurements-kellusomen-20261026-0513/timing_rt_3/flight.fclog
+MATCH out/measurements-kellusomen-20261026-0513/timing_rt_spin_1/flight.fclog
+MATCH out/measurements-kellusomen-20261026-0513/timing_rt_spin_2/flight.fclog
+MATCH out/measurements-kellusomen-20261026-0513/timing_rt_spin_3/flight.fclog

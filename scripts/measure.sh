@@ -8,9 +8,14 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 export BUILD=${BUILD:-build/release}
-OUT=${1:-out/measurements}
+OUT=${1:?usage: measure.sh OUT_DIR   (e.g. results/\$(hostname)-\$(date +%Y%m%d-%H%M))}
 SUDO=""
 [[ $EUID -ne 0 ]] && SUDO=sudo
+# Result sets are a permanent record (results/ is committed); never overwrite one.
+if [ -e "$OUT" ] && [ -n "$(ls -A "$OUT" 2>/dev/null)" ]; then
+    echo "refusing to overwrite existing results in $OUT; choose a new directory" >&2
+    exit 1
+fi
 mkdir -p "$OUT"
 trap '$SUDO bash scripts/netem.sh off >/dev/null' EXIT
 
