@@ -46,6 +46,11 @@ UdpSocket UdpSocket::bound(const std::string& host, std::uint16_t port) {
     return s;
 }
 
+bool UdpSocket::disable_udp_checksum() {
+    const int one = 1;
+    return ::setsockopt(fd_, SOL_SOCKET, SO_NO_CHECK, &one, sizeof one) == 0;
+}
+
 UdpSocket::UdpSocket(UdpSocket&& other) noexcept : fd_(std::exchange(other.fd_, -1)) {}
 
 UdpSocket& UdpSocket::operator=(UdpSocket&& other) noexcept {

@@ -30,6 +30,11 @@ public:
     std::optional<std::size_t> recv(std::span<std::uint8_t> buf, sockaddr_in* from = nullptr);
     bool send_to(std::span<const std::uint8_t> data, const sockaddr_in& to);
 
+    // Sends with a zero UDP checksum (SO_NO_CHECK), so the receiver's kernel does
+    // not silently discard corrupted datagrams and the application CRC-32 is the
+    // integrity check, as on a radio link.
+    bool disable_udp_checksum();
+
 private:
     int fd_ = -1;
 };

@@ -40,6 +40,21 @@ python3 ground/uplink_stress.py --count 2000 --json "$OUT/uplink_clean.json" >/d
 kill "$FC" "$SIM" 2>/dev/null || true
 wait "$FC" "$SIM" 2>/dev/null || true
 
+echo "### 3b. Ground links under 20% loss + 1% bit corruption (CRC must catch it)"
+$SUDO bash scripts/netem.sh on 20 1
+bash scripts/sitl.sh -o "$OUT/netem20_corrupt1_flight"
+"$BUILD/flight_computer" --log none --max-time 900 --stats "$OUT/uplink_corrupt_fc_stats.json" \
+    >"$OUT/stress_corrupt_fc.log" 2>&1 &
+FC=$!
+"$BUILD/fc_sim" --max-time 900 >/dev/null 2>&1 &
+SIM=$!
+sleep 1
+python3 ground/uplink_stress.py --count 2000 --json "$OUT/uplink_netem20_corrupt1.json" >/dev/null || true
+kill -INT "$FC" 2>/dev/null || true
+kill "$SIM" 2>/dev/null || true
+wait "$FC" "$SIM" 2>/dev/null || true
+$SUDO bash scripts/netem.sh off
+
 echo "### 4. Log replay of every real-time flight"
 : >"$OUT/replay.txt"
 for log in "$OUT"/*/flight.fclog; do

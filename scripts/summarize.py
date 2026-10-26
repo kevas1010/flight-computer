@@ -42,15 +42,19 @@ def main(out: Path) -> None:
               f"| {u['acked']}/{u['commands']} ({u['retransmissions']} retx) |")
 
     print("\n## Uplink (stop-and-wait ARQ), 2000 PING commands\n")
-    print("| link | delivered | failed | first-try | mean tx/cmd | retransmissions | latency p50 ms | p99 ms | max ms |")
-    print("|---|---|---|---|---|---|---|---|---|")
-    for name in ("uplink_clean", "uplink_netem20"):
+    print("| link | delivered | failed | first-try | mean tx/cmd | retransmissions | latency p50 ms | p99 ms | max ms "
+          "| corrupt ACKs rejected (gs) | corrupt commands rejected (fc) |")
+    print("|---|---|---|---|---|---|---|---|---|---|---|")
+    fc_corrupt = load(out / "uplink_corrupt_fc_stats.json")
+    for name in ("uplink_clean", "uplink_netem20", "uplink_netem20_corrupt1"):
         s = load(out / f"{name}.json")
         if not s:
             continue
         lat = s["latency_ms"] or {}
+        fc_rej = fc_corrupt["uplink_crc_errors"] if fc_corrupt and "corrupt" in name else "-"
         print(f"| {name} | {s['acked']}/{s['commands']} ({s['delivery_pct']}%) | {s['failed']} | {s['first_try_pct']}% "
-              f"| {s['mean_attempts']} | {s['retransmissions']} | {lat.get('p50')} | {lat.get('p99')} | {lat.get('max')} |")
+              f"| {s['mean_attempts']} | {s['retransmissions']} | {lat.get('p50')} | {lat.get('p99')} | {lat.get('max')} "
+              f"| {s['ack_decode_errors']} | {fc_rej} |")
 
     for name in ("replay.txt", "ctest.txt", "pytest.txt"):
         p = out / name

@@ -112,7 +112,11 @@ int main(int argc, char** argv) {
 
     fc::net::UdpSocket sensor_rx = fc::net::UdpSocket::bound("127.0.0.1", opt.sensor_port);
     fc::net::UdpSocket cmd_sock = fc::net::UdpSocket::bound("0.0.0.0", opt.cmd_port);  // ACKs go out from here too
-    fc::net::UdpSocket tx;
+    fc::net::UdpSocket tx;      // actuators to the sim
+    fc::net::UdpSocket tlm_tx;  // telemetry to the ground
+    // The ground links model a radio: integrity comes from the packet CRC-32, not UDP.
+    cmd_sock.disable_udp_checksum();
+    tlm_tx.disable_udp_checksum();
     const sockaddr_in sim_addr = fc::net::parse_endpoint(opt.sim_endpoint);
     const sockaddr_in gs_addr = fc::net::parse_endpoint(opt.gs_endpoint);
 
@@ -213,7 +217,7 @@ int main(int argc, char** argv) {
             t.loop_p99_us = rolling_p99;
             t.loop_max_us = max_wake;
             len = fc::proto::encode(t, tlm_seq++, now_us, buf);
-            tx.send_to({buf.data(), len}, gs_addr);
+            tlm_tx.send_to({buf.data(), len}, gs_addr);
         }
 
         log.write(computer.tick(), in, out);

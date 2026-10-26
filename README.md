@@ -54,6 +54,19 @@ outliers are host preemption of the VM.
 | command uplink, clean | 2000/2000, latency p50 10.0 ms / p99 10.5 ms (one flight-computer frame) |
 | telemetry downlink, one flight | 81.1 % delivered, all 383 drops detected from sequence gaps; the vehicle landed normally (1.06 m/s) |
 
+**Links under 20 % loss + 1 % bit corruption** (`netem loss 20% corrupt 1%`):
+
+| link | result |
+|---|---|
+| command uplink, 2000 commands | **2000/2000 delivered (100 %)**, 13 corrupt commands rejected by the flight computer's CRC, 12 corrupt ACKs rejected by the ground station's CRC, all recovered by retransmission; latency p99 210 ms |
+| telemetry downlink, one flight | 79.7 % delivered; 410 drops detected from sequence gaps and **9 corrupt packets rejected by CRC**; landed 1.05 m/s |
+
+The ground-link sockets send with a zero UDP checksum (`SO_NO_CHECK`), as on a radio
+link where the packet CRC is the only integrity check. With the kernel checksum
+left on, a probe showed loopback silently discarding all 181 of 4000 netem-corrupted
+datagrams before the application saw them. With it off, the CRC caught 128; the rest
+had corrupted IP headers and surfaced as sequence gaps.
+
 **Fault injection** (real-time three-process runs; same scenarios in-process as unit tests):
 
 | injected fault | flight computer response | outcome |
@@ -64,16 +77,16 @@ outliers are host preemption of the VM.
 | IMU frozen, then altimeter lost | nav_loss → ABORT 0.25 s after the second fault | engine cut, chute landing 6.6 m/s |
 | sensor link blackout, 1 s | sensor_link → ABORT after 200 ms | engine cut, chute landing 6.6 m/s |
 
-**Replay:** all 14 real-time flight logs from the campaign replay **bit-exact**
+**Replay:** all 15 real-time flight logs from the campaign replay **bit-exact**
 (`fc_replay --tol 0`) through the deterministic core, and 4 golden logs are checked
 in CI.
 
-Not covered end to end: netem `corrupt` on loopback is dropped by the kernel's UDP
-checksum before it reaches the ground station, so CRC rejection of corrupt packets
-is verified by unit tests (every single-bit flip of a telemetry packet, C++ and
-Python), not in the netem runs.
-
 ![IMU stuck](docs/imu_stuck_flight.png)
+
+**Ground station GUI** mid-flight, as it ran in a GUI test where ARM was sent by
+clicking the button (ACK OK in 11.5 ms, landed 1.07 m/s):
+
+![Ground station](docs/ground_station_gui.png)
 
 ## Requirements
 
@@ -84,11 +97,11 @@ Python), not in the netem runs.
 | REQ-003 | Fuse IMU and altimeter | 3-state Kalman filter `[h, v, accel_bias]`, IMU-driven predict, altimeter update, Joseph-form covariance, chi-square innovation gate | `test_kalman.cpp`; closed-loop nav error < 1 m |
 | REQ-004 | Throttle controller for the landing burn | ignition point from stopping distance at planned throttle; velocity-profile tracker `v_ref(h) = -sqrt(2a(h-h_t)) - v_t` with feed-forward and drag compensation, clamped to engine throttle range | `test_guidance.cpp`; touchdown < 2 m/s across 10 noise seeds |
 | REQ-005 | Binary telemetry with sequence number, timestamp, CRC-32 | 18-byte header (magic, version, type, seq, µs timestamp, length) + payload + CRC-32/ISO-HDLC | `test_protocol.cpp` (every single-bit flip rejected, truncation, padding, wire layout) |
-| REQ-006 | Ground station detects dropped and corrupt packets | `SequenceTracker` (gaps, reorders, wraparound) + CRC check on every datagram | `ground/test_ground.py`; netem runs below |
+| REQ-006 | Ground station detects dropped and corrupt packets | `SequenceTracker` (gaps, reorders, wraparound) + CRC check on every datagram | `ground/test_ground.py`; netem `loss 20% corrupt 1%` runs above (drops and CRC rejections counted end to end) |
 | REQ-007 | Uplink commands acknowledged and retransmitted until ACKed | stop-and-wait ARQ: random 32-bit session, monotonically increasing `cmd_id`, RTO retransmit; flight computer executes each `cmd_id` once and re-sends the cached ACK for duplicates | `test_commands.cpp`, `test_ground.py` (simulated 20 % loss, exactly-once execution), `uplink_stress.py` under netem |
 | REQ-008 | Fault: altimeter dropout | `ALT_STALE` after 250 ms without a valid reading → IMU dead-reckoning, uncertainty grows honestly | closed-loop + SITL: lands through a 6 s dropout spanning landing-burn ignition |
 | REQ-009 | Fault: stuck IMU value | `IMU_STUCK` after 5 bit-identical samples → navigate on the commanded-thrust + drag model, zero-velocity update at ground contact | closed-loop + SITL: lands with the IMU frozen through the whole landing burn |
-| REQ-010 | Fault: 20 % packet loss (`tc netem`) | `scripts/netem.sh` impairs only the ground links (UDP 5600/5601) on loopback | SITL flight + 2000-command uplink stress under 20 % loss |
+| REQ-010 | Fault: 20 % packet loss (`tc netem`) | `scripts/netem.sh` impairs only the ground links (UDP 5600/5601) on loopback | SITL flight + 2000-command uplink stress under 20 % loss (and 20 % loss + 1 % corruption); enforced in CI |
 | REQ-011 | Detect fault, degrade gracefully or abort | single nav-sensor loss → degrade; both lost, sensor link lost > 200 ms, or altitude σ > 10 m → ABORT (engine cut, chute); faults on the pad block ARM and hold the countdown | `test_state_machine.cpp`, `test_closed_loop.cpp`, SITL fault runs |
 | REQ-012 | Measure loop timing, report p50/p99 jitter | per-frame wake latency + period jitter, nearest-rank percentiles | `scripts/measure.sh` → table above |
 | REQ-013 | Replay mode for regression tests | every frame's inputs and outputs logged; `fc_replay` re-runs the log through `FlightComputer::step()` and diffs every output | golden-log tests in `test_replay.cpp`; every real-time SITL log replays bit-exact |
@@ -176,7 +189,7 @@ Ground-station console commands: `arm`, `abort`, `ping`,
 ## Resume bullets (filled from the measurements above)
 
 - Built a C++20 flight computer running a 100 Hz control loop, Kalman-filter navigation and a landing-burn state machine against a simulated vehicle, with 88 GoogleTest cases in CI (ASan/UBSan clean).
-- Designed a CRC-32-checked UDP telemetry link and an acknowledged stop-and-wait command protocol, sustaining 100 % command delivery (2000/2000, p99 latency 210 ms) under 20 % injected `tc netem` packet loss.
+- Designed a CRC-32-checked UDP telemetry link and an acknowledged stop-and-wait command protocol, sustaining 100 % command delivery (2000/2000, p99 latency 210 ms) under 20 % injected `tc netem` packet loss plus 1 % bit corruption.
 - Measured loop jitter at p99 210 µs (SCHED_FIFO + hybrid spin, WSL2) with 0 overruns in 37k frames, and added fault detection for altimeter dropout and stuck-IMU that still lands at < 1.1 m/s, verified through bit-exact log-replay regression tests.
 
 ## Layout

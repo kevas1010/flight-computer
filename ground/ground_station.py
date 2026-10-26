@@ -33,6 +33,7 @@ from protocol import (  # noqa: E402
     ParamId,
     Telemetry,
     decode_packet,
+    disable_udp_checksum,
     fault_names,
 )
 
@@ -48,6 +49,7 @@ class GroundStation:
         self.tlm_sock.settimeout(0.1)
         self.cmd_sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.cmd_sock.settimeout(0.005)
+        disable_udp_checksum(self.cmd_sock)
         self.fc_addr = (args.fc_host, args.cmd_port)
 
         self.tracker = SequenceTracker()

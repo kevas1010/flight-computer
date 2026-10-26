@@ -63,6 +63,20 @@ FAULTS = {
 }
 
 
+SO_NO_CHECK = 11  # Linux: send UDP datagrams with a zero checksum
+
+
+def disable_udp_checksum(sock) -> None:
+    """Let corrupted datagrams reach the receiver so its CRC-32 check catches them,
+    instead of the kernel silently dropping them (radio-link semantics)."""
+    import socket
+
+    try:
+        sock.setsockopt(socket.SOL_SOCKET, SO_NO_CHECK, 1)
+    except OSError:
+        pass  # not Linux; the CRC still guards against anything that gets through
+
+
 def fault_names(bits: int) -> list[str]:
     return [name for bit, name in FAULTS.items() if bits & bit]
 

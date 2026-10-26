@@ -58,12 +58,14 @@ jobs:
         run: |
           bash scripts/sitl.sh -o out/alt_dropout --fault alt_dropout@24:6
           grep -q '"outcome": "LANDED"' out/alt_dropout/sim_summary.json
-      - name: Flight and uplink under 20% netem loss
-        # Hosted-runner kernels normally ship sch_netem; skip rather than fail if not.
+      - name: Flight and uplink under 20% netem loss + 1% corruption
         run: |
-          if ! sudo bash scripts/netem.sh on 20; then echo "netem unavailable, skipping"; exit 0; fi
+          sudo modprobe sch_netem || sudo apt-get install -y "linux-modules-extra-$(uname -r)" && sudo modprobe sch_netem
+          sudo bash scripts/netem.sh on 20 1
+          sudo tc qdisc show dev lo | grep -q 'netem.*loss 20%'
           bash scripts/sitl.sh -o out/netem20
           grep -q '"outcome": "LANDED"' out/netem20/sim_summary.json
+          python3 -c "import json,sys; t=json.load(open('out/netem20/gs_stats.json'))['telemetry']; print(t); sys.exit(t['dropped'] == 0)"
           build/release/flight_computer --log none --max-time 120 & FC=$!
           sleep 1
           python3 ground/uplink_stress.py --count 300 --json out/netem20/uplink.json

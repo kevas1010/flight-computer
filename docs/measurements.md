@@ -1,4 +1,4 @@
-# Measurements (scripts/measure.sh, Ubuntu 24.04 on WSL2, 2026-10-25)
+# Measurements (scripts/measure.sh, Ubuntu 24.04 on WSL2, 2026-10-25/26)
 
 ## Loop timing, 100 Hz loop, nominal flights
 
@@ -22,6 +22,7 @@
 | fault_dual | CHUTE_LANDING | 6.55 | 547 | ABORT | nav_loss | 100.0% (0 lost, 0 corrupt) | 1/1 (0 retx) |
 | fault_imu_stuck | LANDED | 1.04 | 624 | LANDED | none | 100.0% (0 lost, 0 corrupt) | 1/1 (0 retx) |
 | fault_sensor_blackout | CHUTE_LANDING | 6.55 | 387 | ABORT | sensor_link | 100.0% (0 lost, 0 corrupt) | 1/1 (0 retx) |
+| netem20_corrupt1_flight | LANDED | 1.05 | 624 | LANDED | none | 79.733% (410 lost, 9 corrupt) | 1/1 (0 retx) |
 | netem20_flight | LANDED | 1.06 | 624 | LANDED | none | 81.086% (383 lost, 0 corrupt) | 1/1 (1 retx) |
 | timing_default_1 | LANDED | 1.07 | 624 | LANDED | none | 100.0% (0 lost, 0 corrupt) | 1/1 (0 retx) |
 | timing_default_2 | LANDED | 1.06 | 624 | LANDED | none | 100.0% (0 lost, 0 corrupt) | 1/1 (0 retx) |
@@ -35,10 +36,11 @@
 
 ## Uplink (stop-and-wait ARQ), 2000 PING commands
 
-| link | delivered | failed | first-try | mean tx/cmd | retransmissions | latency p50 ms | p99 ms | max ms |
-|---|---|---|---|---|---|---|---|---|
-| uplink_clean | 2000/2000 (100.0%) | 0 | 100.0% | 1.0 | 0 | 9.97 | 10.53 | 12.5 |
-| uplink_netem20 | 2000/2000 (100.0%) | 0 | 63.65% | 1.576 | 1152 | 10.05 | 210.01 | 310.23 |
+| link | delivered | failed | first-try | mean tx/cmd | retransmissions | latency p50 ms | p99 ms | max ms | corrupt ACKs rejected (gs) | corrupt commands rejected (fc) |
+|---|---|---|---|---|---|---|---|---|---|---|
+| uplink_clean | 2000/2000 (100.0%) | 0 | 100.0% | 1.0 | 0 | 9.97 | 10.53 | 12.5 | 0 | - |
+| uplink_netem20 | 2000/2000 (100.0%) | 0 | 63.65% | 1.576 | 1152 | 10.05 | 210.01 | 310.23 | 0 | - |
+| uplink_netem20_corrupt1 | 2000/2000 (100.0%) | 0 | 62.75% | 1.601 | 1202 | 10.05 | 210.04 | 360.04 | 12 | 13 |
 
 ## replay.txt
 

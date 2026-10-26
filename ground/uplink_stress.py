@@ -20,7 +20,7 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from link import ReliableUplink  # noqa: E402
-from protocol import Ack, DecodeError, MsgType, Opcode, decode_packet  # noqa: E402
+from protocol import Ack, DecodeError, MsgType, Opcode, decode_packet, disable_udp_checksum  # noqa: E402
 
 
 def percentile(sorted_vals: list[float], p: float) -> float:
@@ -41,6 +41,7 @@ def main() -> int:
     dest = (host, int(port))
     sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
     sock.settimeout(0.002)
+    disable_udp_checksum(sock)
     uplink = ReliableUplink(rto=args.rto, max_attempts=args.max_attempts)
     decode_errors = 0
 
